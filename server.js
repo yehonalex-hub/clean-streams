@@ -1,9 +1,11 @@
-const { addonBuilder, serveHTTP } = require("stremio-addon-sdk");
+const { addonBuilder, getRouter } = require("stremio-addon-sdk");
+const express = require("express");
+const zlib = require("zlib");
 
 const CONFIG = {
   PORT: process.env.PORT || 7000,
   UPSTREAM_URL: "https://torrentio.strem.fun",
-  MAX_STREAMS_PER_QUALITY: 1,
+  BASE_URL: process.env.RENDER_EXTERNAL_URL || "https://clean-streams.onrender.com",
 };
 
 // רשימת סדרות ישראליות בשמות עבריים
@@ -244,10 +246,10 @@ const ISRAELI_MOVIES = [
 
 const manifest = {
   id: "community.cleanstreams.il",
-  version: "1.2.0",
+  version: "1.3.0",
   name: "Clean Streams (EN / עברית)",
-  description: "סרטים וסדרות באיכות מעולה (1080p / 4K / עברית) ללא עומס וללא דיבובים זרים. כולל קטלוג סדרות ישראליות וסרטים ישראליים!",
-  resources: ["catalog", "stream"],
+  description: "סרטים וסדרות באיכות מעולה (1080p / 4K / עברית) ללא עומס וללא דיבובים זרים. כולל סדרות וסרטים ישראליים + כתוביות מובנות בעברית ובאנגלית!",
+  resources: ["catalog", "stream", "subtitles"],
   types: ["movie", "series"],
   idPrefixes: ["tt"],
   catalogs: [
@@ -270,7 +272,7 @@ const manifest = {
 
 const builder = new addonBuilder(manifest);
 
-// מטפל בקטלוגים (סדרות ישראליות וסרטים ישראליים)
+// 1. קטלוגים
 builder.defineCatalogHandler(async ({ type, id, extra }) => {
   let list = [];
   if (type === "series" && id === "israeli_series") {
@@ -287,7 +289,7 @@ builder.defineCatalogHandler(async ({ type, id, extra }) => {
   return { metas: list };
 });
 
-// שידור ישיר עבור סדרות מקומיות שאינן בטורנטים (כמו קופה ראשית)
+// 2. צפייה ישירה עבור סדרות כאן 11
 async function getDirectStream(show, season, episode) {
   try {
     const query = `${show.hebrewQuery} עונה ${season} פרק ${episode}`;
@@ -354,7 +356,6 @@ function parseStream(stream, isIsraeliContent = false) {
   const isForeignDub = /\b(french|vf|vff|vfq|truefrench|german|deutsch|italian|ita|hindi|tamil|telugu|malayalam|kannada|spanish|castellano|latino|espanol|polish|polski|turkish|turk)\b/i.test(fullText);
   const hasCyrillic = /[\u0400-\u04FF]/.test(fullText);
 
-  // עבור תוכן ישראלי, לא פוסלים אם יש כיתוב רוסי של המעלה (כמו ברותראקר)
   const isForeignLanguage = !isIsraeliContent && ((foreignFlagOnly || isForeignDub || hasCyrillic) && !isHebrew);
 
   let resolution = "1080p";
@@ -433,12 +434,12 @@ function filterAndCurate(streams, isIsraeliContent = false) {
   return selected;
 }
 
+// 3. מקורות צפייה (Streams)
 builder.defineStreamHandler(async ({ type, id }) => {
   console.log(`[CleanStreams] Request received for: ${type}/${id}`);
 
   const streams = [];
 
-  // עבור סדרות ללא מקור טורנטים (כמו קופה ראשית) - נביא מקור ישיר
   if (type === "series") {
     const parts = id.split(":");
     const imdbId = parts[0];
@@ -479,16 +480,122 @@ builder.defineStreamHandler(async ({ type, id }) => {
   return { streams };
 });
 
-serveHTTP(builder.getInterface(), { port: CONFIG.PORT }).then(({ url }) => {
-  const manifestUrl = url.endsWith("/manifest.json") ? url : `${url}/manifest.json`;
-  const stremioProtocol = `stremio://${manifestUrl.replace(/^https?:\/\//, "")}`;
+// 4. מנוע כתוביות אוטומטי בעברית ובאנגלית (Subtitles)
+async function fetchSubtitlesForLang(imdbIdNumeric, season, episode, lang) {
+  try {
+    let url = `https://rest.opensubtitles.org/search/imdbid-${imdbIdNumeric}`;
+    if (season && episode) {
+      url += `/season-${season}/episode-${episode}`;
+    }
+    url += `/sublanguageid-${lang}`;
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'TemporaryUserAgent' }
+    });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        return data.slice(0, 3).map((sub, idx) => ({
+          id: `${lang}_${sub.IDSubtitleFile || idx}`,
+          url: `${CONFIG.BASE_URL}/sub/download?url=${encodeURIComponent(sub.SubDownloadLink)}`,
+          lang: lang,
+          format: "srt"
+        }));
+      }
+    }
+  } catch (e) {
+    console.warn(`[CleanStreams] Subtitles fetch failed for ${lang}:`, e.message);
+  }
+  return [];
+}
+
+builder.defineSubtitlesHandler(async ({ type, id }) => {
+  console.log(`[CleanStreams] Subtitles requested for: ${type}/${id}`);
+
+  const parts = id.split(":");
+  const rawId = parts[0].replace(/^tt/, "");
+  const season = parts[1];
+  const episode = parts[2];
+
+  const subtitles = [];
+
+  // חיפוש במקביל של כתוביות בעברית ובאנגלית
+  const [hebSubs, engSubs] = await Promise.all([
+    fetchSubtitlesForLang(rawId, season, episode, "heb"),
+    fetchSubtitlesForLang(rawId, season, episode, "eng")
+  ]);
+
+  if (hebSubs && hebSubs.length > 0) subtitles.push(...hebSubs);
+  if (engSubs && engSubs.length > 0) subtitles.push(...engSubs);
+
+  console.log(`[CleanStreams] Returning ${subtitles.length} subtitles for ${id}`);
+  return { subtitles };
+});
+
+// 5. שרת ה-Express המשולב עם פריקת והמרת כתוביות (UTF-8)
+const app = express();
+
+// נקודת קצה לפריקת קובץ הכתוביות והמרת קידוד לעברית נקייה ללא ג'יבריש
+app.get("/sub/download", async (req, res) => {
+  const gzUrl = req.query.url;
+  if (!gzUrl) return res.status(400).send("Missing url parameter");
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    const response = await fetch(gzUrl, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'TemporaryUserAgent' }
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) return res.status(502).send("Failed to fetch subtitle");
+
+    const buf = Buffer.from(await response.arrayBuffer());
+    let rawTextBuffer;
+    try {
+      rawTextBuffer = zlib.gunzipSync(buf);
+    } catch (e) {
+      rawTextBuffer = buf; // אם זה לא מכווץ ב-gz
+    }
+
+    // פענוח קידוד (טיפול בג'יבריש עבור כתוביות ישנות ב-windows-1255)
+    let text = rawTextBuffer.toString("utf-8");
+    if (!/[\u0590-\u05FF]/.test(text)) {
+      try {
+        const winDecoder = new TextDecoder("windows-1255");
+        const winText = winDecoder.decode(rawTextBuffer);
+        if (/[\u0590-\u05FF]/.test(winText)) {
+          text = winText;
+        }
+      } catch (err) {}
+    }
+
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.send(text);
+  } catch (err) {
+    console.error("[CleanStreams] Subtitle download error:", err.message);
+    res.status(500).send("Error downloading subtitle");
+  }
+});
+
+// שילוב ממשק התוסף של Stremio
+const addonRouter = getRouter(builder.getInterface());
+app.use(addonRouter);
+
+app.listen(CONFIG.PORT, () => {
   console.log(`=================================================`);
-  console.log(`🚀 Clean Streams Addon v1.2.0 פועל בהצלחה!`);
-  console.log(`🌐 כתובת דף התוסף: ${manifestUrl.replace(/\/manifest\.json$/, "")}`);
-  console.log(`🔗 כתובת ה-Manifest להתקנה בסטרימיו:`);
-  console.log(`   ${manifestUrl}`);
-  console.log(`📲 קישור ישיר להתקנה בלחיצה אחת:`);
-  console.log(`   ${stremioProtocol}`);
+  console.log(`🚀 Clean Streams Addon v1.3.0 פועל בהצלחה!`);
+  console.log(`🌐 כתובת דף התוסף: ${CONFIG.BASE_URL}`);
+  console.log(`🔗 כתובת ה-Manifest: ${CONFIG.BASE_URL}/manifest.json`);
+  console.log(`💬 מנוע כתוביות אוטומטי בעברית ובאנגלית פעיל!`);
   console.log(`=================================================`);
 });
