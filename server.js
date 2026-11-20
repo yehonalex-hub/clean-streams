@@ -161,54 +161,6 @@ builder.defineCatalogHandler(async ({ type, id, extra }) => {
   return { metas: [] };
 });
 
-// חיפוש וידאו ישיר עבור סדרות ישראליות (כאן 11 ורשת)
-async function getDirectStream(show, season, episode) {
-  try {
-    const query = `${show.hebrewQuery} עונה ${season} פרק ${episode}`;
-    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4500);
-
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
-    });
-    clearTimeout(timeout);
-
-    if (res.ok) {
-      const html = await res.text();
-      const regex = /"videoRenderer":\{"videoId":"([a-zA-Z0-9_-]{11})","thumbnail".*?"title":\{"runs":\[\{"text":"(.*?)"\}\]/g;
-      let m;
-      let bestMatch = null;
-      while ((m = regex.exec(html)) !== null) {
-        const videoId = m[1];
-        const title = m[2];
-
-        if (title.includes(show.hebrewQuery)) {
-          if (title.includes(`פרק ${episode}`) || title.includes(`פרק ${parseInt(episode)}`)) {
-            bestMatch = { videoId, title };
-            break;
-          }
-          if (!bestMatch) {
-            bestMatch = { videoId, title };
-          }
-        }
-      }
-
-      if (bestMatch) {
-        return {
-          ytId: bestMatch.videoId,
-          name: "🇮🇱 כאן 11 (1080p)",
-          title: `🇮🇱 ${show.name}\n${bestMatch.title}\n⚡ צפייה ישירה רשמית (מתחיל מיידית ללא המתנה)`
-        };
-      }
-    }
-  } catch (err) {
-    console.warn(`[CleanStreams] Direct stream search failed:`, err.message);
-  }
-  return null;
-}
-
 function parseStream(stream) {
   const fullText = `${stream.name || ""} ${stream.title || ""} ${stream.behaviorHints?.filename || ""}`;
 
@@ -310,22 +262,6 @@ builder.defineStreamHandler(async ({ type, id }) => {
   console.log(`[CleanStreams] Request received for: ${type}/${id}`);
 
   const streams = [];
-
-  if (type === "series") {
-    const parts = id.split(":");
-    const imdbId = parts[0];
-    const season = parts[1] || "1";
-    const episode = parts[2] || "1";
-
-    const show = ISRAELI_SERIES.find(s => s.id === imdbId && s.isKan11);
-    if (show) {
-      console.log(`[CleanStreams] Fetching direct stream for ${show.name} S${season}E${episode}`);
-      const direct = await getDirectStream(show, season, episode);
-      if (direct) {
-        streams.push(direct);
-      }
-    }
-  }
 
   try {
     const url = `${CONFIG.UPSTREAM_URL}/stream/${type}/${id}.json`;
