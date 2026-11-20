@@ -327,7 +327,7 @@ async function getDirectStream(show, season, episode) {
   return null;
 }
 
-function parseStream(stream) {
+function parseStream(stream, isIsraeliContent = false) {
   const fullText = `${stream.name || ""} ${stream.title || ""} ${stream.behaviorHints?.filename || ""}`;
 
   const seedMatch = fullText.match(/👤\s*(\d+)/i) || fullText.match(/seeds?[:\s]+(\d+)/i);
@@ -337,16 +337,17 @@ function parseStream(stream) {
   const size = sizeMatch ? sizeMatch[1] : "";
 
   const isJunk = /\b(cam|hdcam|camrip|telesync|ts|hdts|telecine|tc|screener|scr|dvdscr|r5|workprint|sample)\b/i.test(fullText);
-  const isHebrew = /[\u0590-\u05FF]|\b(heb|hebrew|hebsub)\b|🇮🇱/i.test(fullText);
+  const isHebrew = isIsraeliContent || /[\u0590-\u05FF]|\b(heb|hebrew|hebsub)\b|🇮🇱/i.test(fullText);
 
   const hasEngOrHebFlag = /🇬🇧|🇺🇸|🇮🇱/.test(fullText);
   const hasForeignFlag = /🇷🇺|🇮🇹|🇫🇷|🇩🇪|🇪🇸|🇮🇳|🇹🇷|🇵🇱|🇨🇿|🇰🇷|🇯🇵|🇨🇳|🇧🇷|🇳🇱|🇸🇪|🇩🇰|🇬🇷/.test(fullText);
   const foreignFlagOnly = hasForeignFlag && !hasEngOrHebFlag;
 
-  const isForeignDub = /\b(french|vf|vff|vfq|truefrench|german|deutsch|italian|ita|hindi|tamil|telugu|malayalam|kannada|spanish|castellano|latino|espanol|rutracker|polish|polski|turkish|turk)\b/i.test(fullText);
+  const isForeignDub = /\b(french|vf|vff|vfq|truefrench|german|deutsch|italian|ita|hindi|tamil|telugu|malayalam|kannada|spanish|castellano|latino|espanol|polish|polski|turkish|turk)\b/i.test(fullText);
   const hasCyrillic = /[\u0400-\u04FF]/.test(fullText);
 
-  const isForeignLanguage = (foreignFlagOnly || isForeignDub || hasCyrillic) && !isHebrew;
+  // עבור תוכן ישראלי, לא פוסלים אם יש כיתוב רוסי של המעלה (כמו ברותראקר)
+  const isForeignLanguage = !isIsraeliContent && ((foreignFlagOnly || isForeignDub || hasCyrillic) && !isHebrew);
 
   let resolution = "1080p";
   if (/\b(4k|2160p|uhd)\b/i.test(fullText)) resolution = "4K";
@@ -365,10 +366,10 @@ function parseStream(stream) {
   };
 }
 
-function filterAndCurate(streams) {
+function filterAndCurate(streams, isIsraeliContent = false) {
   if (!Array.isArray(streams) || streams.length === 0) return [];
 
-  const parsed = streams.map(parseStream);
+  const parsed = streams.map(s => parseStream(s, isIsraeliContent));
   const valid = parsed.filter(p => !p.isJunk && !p.isForeignLanguage && p.seeders > 0);
 
   const hebrewList = valid.filter(p => p.isHebrew).sort((a, b) => b.seeders - a.seeders);
@@ -454,9 +455,12 @@ builder.defineStreamHandler(async ({ type, id }) => {
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timeout);
 
+    const imdbId = id.split(":")[0];
+    const isIsraeli = ISRAELI_MOVIES.some(m => m.id === imdbId) || ISRAELI_SERIES.some(s => s.id === imdbId);
+
     if (res.ok) {
       const data = await res.json();
-      const torrentStreams = filterAndCurate(data.streams || []);
+      const torrentStreams = filterAndCurate(data.streams || [], isIsraeli);
       streams.push(...torrentStreams);
     }
   } catch (err) {
