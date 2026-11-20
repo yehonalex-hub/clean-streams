@@ -129,6 +129,14 @@ const ISRAELI_SERIES = [
 // רשימת סרטים ישראליים מובילים בשמות עבריים
 const ISRAELI_MOVIES = [
   {
+    id: "tt43612870",
+    type: "movie",
+    name: "קופה ראשית: הסרט",
+    poster: "https://images.metahub.space/poster/medium/tt43612870/img",
+    description: "עובדי סניף 'שפע יששכר' יוצאים להרפתקה מטורפת מחוץ ליבנה בעקבות תקרית מסתורית עם אמנון טיטינסקי.",
+    releaseInfo: "2026"
+  },
+  {
     id: "tt0374053",
     type: "movie",
     name: "מבצע סבתא",
