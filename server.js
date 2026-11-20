@@ -481,60 +481,44 @@ builder.defineStreamHandler(async ({ type, id }) => {
 });
 
 // 4. מנוע כתוביות אוטומטי בעברית ובאנגלית (Subtitles)
-async function fetchSubtitlesForLang(imdbIdNumeric, season, episode, lang) {
+builder.defineSubtitlesHandler(async ({ type, id }) => {
+  console.log(`[CleanStreams] Subtitles requested for: ${type}/${id}`);
+
+  const subtitles = [];
+
   try {
-    let url = `https://rest.opensubtitles.org/search/imdbid-${imdbIdNumeric}`;
-    if (season && episode) {
-      url += `/season-${season}/episode-${episode}`;
-    }
-    url += `/sublanguageid-${lang}`;
-
+    const url = `https://opensubtitles-v3.strem.io/subtitles/${type}/${id}.json`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
+    const timeout = setTimeout(() => controller.abort(), 5000);
 
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'TemporaryUserAgent' }
-    });
+    const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timeout);
 
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data)) {
-        return data.slice(0, 3).map((sub, idx) => ({
-          id: `${lang}_${sub.IDSubtitleFile || idx}`,
-          url: `${CONFIG.BASE_URL}/sub/download?url=${encodeURIComponent(sub.SubDownloadLink)}`,
-          lang: lang,
+      if (Array.isArray(data.subtitles)) {
+        const heb = data.subtitles.filter(s => s.lang === "heb").slice(0, 3).map((s, idx) => ({
+          id: `clean_heb_${idx}_${s.id || idx}`,
+          url: s.url,
+          lang: "heb",
           format: "srt"
         }));
+
+        const eng = data.subtitles.filter(s => s.lang === "eng").slice(0, 2).map((s, idx) => ({
+          id: `clean_eng_${idx}_${s.id || idx}`,
+          url: s.url,
+          lang: "eng",
+          format: "srt"
+        }));
+
+        subtitles.push(...heb, ...eng);
       }
     }
-  } catch (e) {
-    console.warn(`[CleanStreams] Subtitles fetch failed for ${lang}:`, e.message);
+  } catch (err) {
+    console.warn(`[CleanStreams] Subtitles fetch error:`, err.message);
   }
-  return [];
-}
 
-builder.defineSubtitlesHandler(async ({ type, id }) => {
-  console.log(`[CleanStreams] Subtitles requested for: ${type}/${id}`);
-
-  const parts = id.split(":");
-  const rawId = parts[0].replace(/^tt/, "");
-  const season = parts[1];
-  const episode = parts[2];
-
-  const subtitles = [];
-
-  // חיפוש במקביל של כתוביות בעברית ובאנגלית
-  const [hebSubs, engSubs] = await Promise.all([
-    fetchSubtitlesForLang(rawId, season, episode, "heb"),
-    fetchSubtitlesForLang(rawId, season, episode, "eng")
-  ]);
-
-  if (hebSubs && hebSubs.length > 0) subtitles.push(...hebSubs);
-  if (engSubs && engSubs.length > 0) subtitles.push(...engSubs);
-
-  console.log(`[CleanStreams] Returning ${subtitles.length} subtitles for ${id}`);
+  console.log(`[CleanStreams] Returning ${subtitles.length} clean subtitles for ${id}`);
   return { subtitles };
 });
 
