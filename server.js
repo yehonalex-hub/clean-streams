@@ -246,7 +246,7 @@ const ISRAELI_MOVIES = [
 
 const manifest = {
   id: "community.cleanstreams.il",
-  version: "1.3.0",
+  version: "1.4.0",
   name: "Clean Streams (EN / עברית)",
   description: "סרטים וסדרות באיכות מעולה (1080p / 4K / עברית) ללא עומס וללא דיבובים זרים. כולל סדרות וסרטים ישראליים + כתוביות מובנות בעברית ובאנגלית!",
   resources: ["catalog", "stream", "subtitles"],
@@ -440,6 +440,15 @@ builder.defineStreamHandler(async ({ type, id }) => {
 
   const streams = [];
 
+  // עבור סרטים ישראליים מיוחדים
+  if (type === "movie" && id === "tt43612870") {
+    streams.push({
+      ytId: "O0zp3Bqw0a8",
+      name: "🇮🇱 [1080p] קופה ראשית: הסרט",
+      title: "🎬 הטריילר הרשמי ב-Full HD\nℹ️ הסרט יצא לאקרנים ומוקרן כעת בבתי הקולנוע!\n✨ ברגע שישוחרר לשידור דיגיטלי, הסרט המלא יופיע כאן אוטומטית."
+    });
+  }
+
   if (type === "series") {
     const parts = id.split(":");
     const imdbId = parts[0];
@@ -480,45 +489,96 @@ builder.defineStreamHandler(async ({ type, id }) => {
   return { streams };
 });
 
-// 4. מנוע כתוביות אוטומטי בעברית ובאנגלית (Subtitles)
+// 4. מנוע כתוביות אוטומטי בענן בעברית ובאנגלית (Wizdom + OpenSubtitles)
 builder.defineSubtitlesHandler(async ({ type, id }) => {
   console.log(`[CleanStreams] Subtitles requested for: ${type}/${id}`);
 
   const subtitles = [];
 
-  try {
-    const url = `https://opensubtitles-v3.strem.io/subtitles/${type}/${id}.json`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeout);
-
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data.subtitles)) {
-        const heb = data.subtitles.filter(s => s.lang === "heb").slice(0, 3).map((s, idx) => ({
-          id: `clean_heb_${idx}_${s.id || idx}`,
-          url: s.url,
-          lang: "heb",
-          format: "srt"
-        }));
-
-        const eng = data.subtitles.filter(s => s.lang === "eng").slice(0, 2).map((s, idx) => ({
-          id: `clean_eng_${idx}_${s.id || idx}`,
-          url: s.url,
-          lang: "eng",
-          format: "srt"
-        }));
-
-        subtitles.push(...heb, ...eng);
+  // פנייה במקביל ל-Wizdom (המאגר הישראלי המוביל) ול-OpenSubtitles
+  const wizdomPromise = (async () => {
+    try {
+      const url = `https://4b139a4b7f94-wizdom-stremio-v2.baby-beamup.club/subtitles/${type}/${id}.json`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'Mozilla/5.0' } });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.subtitles)) {
+          return data.subtitles
+            .filter(s => s.lang === "heb" || s.lang === "he")
+            .slice(0, 3)
+            .map((s, idx) => ({
+              id: `clean_wiz_${idx}_${s.id || idx}`,
+              url: s.url,
+              lang: "heb",
+              format: "srt"
+            }));
+        }
       }
+    } catch (err) {
+      console.warn(`[CleanStreams] Wizdom subs error:`, err.message);
+    }
+    return [];
+  })();
+
+  const openSubsPromise = (async () => {
+    try {
+      const url = `https://opensubtitles-v3.strem.io/subtitles/${type}/${id}.json`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'Mozilla/5.0' } });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.subtitles)) {
+          const eng = data.subtitles
+            .filter(s => s.lang === "eng" || s.lang === "en")
+            .slice(0, 2)
+            .map((s, idx) => ({
+              id: `clean_eng_${idx}_${s.id || idx}`,
+              url: s.url,
+              lang: "eng",
+              format: "srt"
+            }));
+          const heb = data.subtitles
+            .filter(s => s.lang === "heb" || s.lang === "he")
+            .slice(0, 2)
+            .map((s, idx) => ({
+              id: `clean_os_heb_${idx}_${s.id || idx}`,
+              url: s.url,
+              lang: "heb",
+              format: "srt"
+            }));
+          return { eng, heb };
+        }
+      }
+    } catch (err) {
+      console.warn(`[CleanStreams] OpenSubs error:`, err.message);
+    }
+    return { eng: [], heb: [] };
+  })();
+
+  try {
+    const [wizdomSubs, openSubs] = await Promise.all([wizdomPromise, openSubsPromise]);
+
+    // כתוביות בעברית: ראשית מ-Wizdom, ואם לא נמצא אז מ-OpenSubtitles
+    if (wizdomSubs.length > 0) {
+      subtitles.push(...wizdomSubs);
+    } else if (openSubs.heb.length > 0) {
+      subtitles.push(...openSubs.heb);
+    }
+
+    // כתוביות באנגלית מ-OpenSubtitles
+    if (openSubs.eng.length > 0) {
+      subtitles.push(...openSubs.eng);
     }
   } catch (err) {
-    console.warn(`[CleanStreams] Subtitles fetch error:`, err.message);
+    console.warn(`[CleanStreams] Subtitles combination error:`, err.message);
   }
 
-  console.log(`[CleanStreams] Returning ${subtitles.length} clean subtitles for ${id}`);
+  console.log(`[CleanStreams] Returning ${subtitles.length} clean subtitles (HE/EN) for ${id}`);
   return { subtitles };
 });
 
@@ -577,9 +637,9 @@ app.use(addonRouter);
 
 app.listen(CONFIG.PORT, () => {
   console.log(`=================================================`);
-  console.log(`🚀 Clean Streams Addon v1.3.0 פועל בהצלחה!`);
+  console.log(`🚀 Clean Streams Addon v1.4.0 פועל בהצלחה!`);
   console.log(`🌐 כתובת דף התוסף: ${CONFIG.BASE_URL}`);
   console.log(`🔗 כתובת ה-Manifest: ${CONFIG.BASE_URL}/manifest.json`);
-  console.log(`💬 מנוע כתוביות אוטומטי בעברית ובאנגלית פעיל!`);
+  console.log(`💬 מנוע כתוביות אוטומטי בעברית (Wizdom) ובאנגלית (OpenSubtitles) פעיל!`);
   console.log(`=================================================`);
 });
