@@ -6,12 +6,12 @@ const CONFIG = {
   MAX_STREAMS_PER_QUALITY: 1,
 };
 
-// רשימת סדרות ישראליות מובילות לקטלוג
+// רשימת סדרות ישראליות בשמות עבריים
 const ISRAELI_SERIES = [
   {
     id: "tt8796226",
     type: "series",
-    name: "קופה ראשית (Checkout)",
+    name: "קופה ראשית",
     poster: "https://images.metahub.space/poster/medium/tt8796226/img",
     description: "קומדיית המצבים האהובה של כאן 11 בסניף 'שפע יששכר' ביבנה.",
     releaseInfo: "2018",
@@ -21,7 +21,7 @@ const ISRAELI_SERIES = [
   {
     id: "tt12819234",
     type: "series",
-    name: "מנאייכ (Manayek)",
+    name: "מנאייכ",
     poster: "https://images.metahub.space/poster/medium/tt12819234/img",
     description: "דרמת פשע ומתח ישראלית על חוקר מח\"ש איזי בכר.",
     releaseInfo: "2020",
@@ -31,7 +31,7 @@ const ISRAELI_SERIES = [
   {
     id: "tt4565380",
     type: "series",
-    name: "פאודה (Fauda)",
+    name: "פאודה",
     poster: "https://images.metahub.space/poster/medium/tt4565380/img",
     description: "סדרת האקשן והמתח המצליחה על יחידת המסתערבים.",
     releaseInfo: "2015"
@@ -39,7 +39,7 @@ const ISRAELI_SERIES = [
   {
     id: "tt10577736",
     type: "series",
-    name: "טהרן (Tehran)",
+    name: "טהרן",
     poster: "https://images.metahub.space/poster/medium/tt10577736/img",
     description: "סדרת הריגול הבינלאומית על סוכנת מוסד הנשלחת לטהרן.",
     releaseInfo: "2020",
@@ -49,7 +49,7 @@ const ISRAELI_SERIES = [
   {
     id: "tt7865452",
     type: "series",
-    name: "שבאבניקים (Shababnikim)",
+    name: "שבאבניקים",
     poster: "https://images.metahub.space/poster/medium/tt7865452/img",
     description: "ארבעה תלמידי ישיבה אורתודוקסים מתמודדים עם החיים בירושלים.",
     releaseInfo: "2017"
@@ -57,7 +57,7 @@ const ISRAELI_SERIES = [
   {
     id: "tt3069894",
     type: "series",
-    name: "שטיסל (Shtisel)",
+    name: "שטיסל",
     poster: "https://images.metahub.space/poster/medium/tt3069894/img",
     description: "סיפורה של משפחה חרדית המתגוררת בשכונת גאולה בירושלים.",
     releaseInfo: "2013"
@@ -65,7 +65,7 @@ const ISRAELI_SERIES = [
   {
     id: "tt4177454",
     type: "series",
-    name: "היהודים באים (The Jews Are Coming)",
+    name: "היהודים באים",
     poster: "https://images.metahub.space/poster/medium/tt4177454/img",
     description: "תוכנית סאטירה ומערכונים ישראלית הבוחנת את תולדות העם היהודי.",
     releaseInfo: "2014",
@@ -75,7 +75,7 @@ const ISRAELI_SERIES = [
   {
     id: "tt14426644",
     type: "series",
-    name: "המפקדת (Dismissed)",
+    name: "המפקדת",
     poster: "https://images.metahub.space/poster/medium/tt14426644/img",
     description: "דרמה קומית על קצינה צעירה בבסיס טירונים של מחו\"ה אלון.",
     releaseInfo: "2021",
@@ -85,7 +85,7 @@ const ISRAELI_SERIES = [
   {
     id: "tt8190688",
     type: "series",
-    name: "שעת נעילה (Valley of Tears)",
+    name: "שעת נעילה",
     poster: "https://images.metahub.space/poster/medium/tt8190688/img",
     description: "סדרת דרמה היסטורית המתארת את ימי מלחמת יום הכיפורים.",
     releaseInfo: "2020",
@@ -95,7 +95,7 @@ const ISRAELI_SERIES = [
   {
     id: "tt1664065",
     type: "series",
-    name: "עספור (Asfur)",
+    name: "עספור",
     poster: "https://images.metahub.space/poster/medium/tt1664065/img",
     description: "סדרת דרמת פשע ישראלית על ארבעה חברים המתגוררים בחוות שלדים בירושלים.",
     releaseInfo: "2010"
@@ -103,7 +103,7 @@ const ISRAELI_SERIES = [
   {
     id: "tt1405737",
     type: "series",
-    name: "רמזור (Ramzor)",
+    name: "רמזור",
     poster: "https://images.metahub.space/poster/medium/tt1405737/img",
     description: "קומדיית המצבים של אדיר מילר על שלושה חברים בשלבים שונים בזוגיות.",
     releaseInfo: "2008"
@@ -111,7 +111,7 @@ const ISRAELI_SERIES = [
   {
     id: "tt3657702",
     type: "series",
-    name: "זגורי אימפריה (Zaguri Empire)",
+    name: "זגורי אימפריה",
     poster: "https://images.metahub.space/poster/medium/tt3657702/img",
     description: "משפחת זגורי מבאר שבע מנסה להסיר קללה שהוטלה על המשפחה.",
     releaseInfo: "2014"
@@ -119,18 +119,126 @@ const ISRAELI_SERIES = [
   {
     id: "tt0928368",
     type: "series",
-    name: "הפיג'מות (The Pyjamas)",
+    name: "הפיג'מות",
     poster: "https://images.metahub.space/poster/medium/tt0928368/img",
     description: "להקת רוק צעירה מנתניה מנסה לפרוץ בעיר הגדולה תל אביב.",
     releaseInfo: "2003"
   }
 ];
 
+// רשימת סרטים ישראליים מובילים בשמות עבריים
+const ISRAELI_MOVIES = [
+  {
+    id: "tt0374053",
+    type: "movie",
+    name: "מבצע סבתא",
+    poster: "https://images.metahub.space/poster/medium/tt0374053/img",
+    description: "קומדיית הפולחן הישראלית על שלושה אחים המנסים לקבור את סבתם בקיבוץ.",
+    releaseInfo: "1999"
+  },
+  {
+    id: "tt0073052",
+    type: "movie",
+    name: "גבעת חלפון אינה עונה",
+    poster: "https://images.metahub.space/poster/medium/tt0073052/img",
+    description: "קומדיית הקאלט הבלתי נשכחת של הגשש החיוור בסיני בבימויו של אסי דיין.",
+    releaseInfo: "1976"
+  },
+  {
+    id: "tt3576084",
+    type: "movie",
+    name: "אפס ביחסי אנוש",
+    poster: "https://images.metahub.space/poster/medium/tt3576084/img",
+    description: "קומדיה שחורה על משרד שלישות בבסיס צבאי בדרום.",
+    releaseInfo: "2014"
+  },
+  {
+    id: "tt7252000",
+    type: "movie",
+    name: "מכתוב",
+    poster: "https://images.metahub.space/poster/medium/tt7252000/img",
+    description: "סטיב וצ'ומה, שני גובי עולם תחתון ירושלמים, מחליטים להגשים פתקים מהכותל.",
+    releaseInfo: "2017"
+  },
+  {
+    id: "tt0079118",
+    type: "movie",
+    name: "אסקימו לימון",
+    poster: "https://images.metahub.space/poster/medium/tt0079118/img",
+    description: "סרט הנעורים הישראלי המצליח ביותר בכל הזמנים של בנצי, מומו ויהודה'לה.",
+    releaseInfo: "1978"
+  },
+  {
+    id: "tt12839480",
+    type: "movie",
+    name: "לשחרר את שולי",
+    poster: "https://images.metahub.space/poster/medium/tt12839480/img",
+    description: "שלישיית מה קשור יוצאת להרפתקה מטורפת בקולומביה כדי להציל את שולי.",
+    releaseInfo: "2021"
+  },
+  {
+    id: "tt1675197",
+    type: "movie",
+    name: "זוהי סדום",
+    poster: "https://images.metahub.space/poster/medium/tt1675197/img",
+    description: "כוכבי ארץ נהדרת בקומדיה קורעת על השבוע האחרון בתולדות העיר סדום.",
+    releaseInfo: "2010"
+  },
+  {
+    id: "tt0152492",
+    type: "movie",
+    name: "חגיגה בסנוקר",
+    poster: "https://images.metahub.space/poster/medium/tt0152492/img",
+    description: "יהודה ברקן וזאב רווח בקלאסיקת הבורקס הנצחית של חנצ'ה וגבריאל.",
+    releaseInfo: "1975"
+  },
+  {
+    id: "tt0133689",
+    type: "movie",
+    name: "צ'רלי וחצי",
+    poster: "https://images.metahub.space/poster/medium/tt0133689/img",
+    description: "צ'רלי ומיקו, שני נוכלים חביבים, מנסים להסתדר בעולם הגדול.",
+    releaseInfo: "1974"
+  },
+  {
+    id: "tt1185616",
+    type: "movie",
+    name: "ואלס עם באשיר",
+    poster: "https://images.metahub.space/poster/medium/tt1185616/img",
+    description: "סרט האנימציה הדוקומנטרי המופתי והמועמד לאוסקר של ארי פולמן על מלחמת לבנון.",
+    releaseInfo: "2008"
+  },
+  {
+    id: "tt0374279",
+    type: "movie",
+    name: "סוף העולם שמאלה",
+    poster: "https://images.metahub.space/poster/medium/tt0374279/img",
+    description: "עיירת פיתוח בנגב בשנות ה-60 מחברת בין משפחה הודית למשפחה מרוקאית.",
+    releaseInfo: "2004"
+  },
+  {
+    id: "tt1077262",
+    type: "movie",
+    name: "עג'מי",
+    poster: "https://images.metahub.space/poster/medium/tt1077262/img",
+    description: "דרמת פשע ריאליסטית ומועמדת לאוסקר המתרחשת בשכונת עג'מי ביפו.",
+    releaseInfo: "2009"
+  },
+  {
+    id: "tt6896536",
+    type: "movie",
+    name: "פוקסטרוט",
+    poster: "https://images.metahub.space/poster/medium/tt6896536/img",
+    description: "זוכה פרס אופיר על הורים המתמודדים עם הבשורה הקשה על נפילת בנם בצבא.",
+    releaseInfo: "2017"
+  }
+];
+
 const manifest = {
   id: "community.cleanstreams.il",
-  version: "1.1.0",
+  version: "1.2.0",
   name: "Clean Streams (EN / עברית)",
-  description: "תוסף צפייה נקי ומסונן: רק איכויות מעולות (1080p / 4K / עברית), ללא עומס, ללא CAM וללא שפות זרות. כולל קטלוג סדרות ישראליות!",
+  description: "סרטים וסדרות באיכות מעולה (1080p / 4K / עברית) ללא עומס וללא דיבובים זרים. כולל קטלוג סדרות ישראליות וסרטים ישראליים!",
   resources: ["catalog", "stream"],
   types: ["movie", "series"],
   idPrefixes: ["tt"],
@@ -140,6 +248,12 @@ const manifest = {
       id: "israeli_series",
       name: "סדרות ישראליות 🇮🇱",
       extra: [{ name: "search", isRequired: false }]
+    },
+    {
+      type: "movie",
+      id: "israeli_movies",
+      name: "סרטים ישראליים 🇮🇱",
+      extra: [{ name: "search", isRequired: false }]
     }
   ],
   background: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1920&q=80",
@@ -148,18 +262,70 @@ const manifest = {
 
 const builder = new addonBuilder(manifest);
 
-// מטפל בקטלוג סדרות ישראליות
+// מטפל בקטלוגים (סדרות ישראליות וסרטים ישראליים)
 builder.defineCatalogHandler(async ({ type, id, extra }) => {
+  let list = [];
   if (type === "series" && id === "israeli_series") {
-    let list = ISRAELI_SERIES;
-    if (extra && extra.search) {
-      const q = extra.search.toLowerCase();
-      list = list.filter(s => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q));
-    }
-    return { metas: list };
+    list = ISRAELI_SERIES;
+  } else if (type === "movie" && id === "israeli_movies") {
+    list = ISRAELI_MOVIES;
   }
-  return { metas: [] };
+
+  if (extra && extra.search) {
+    const q = extra.search.toLowerCase();
+    list = list.filter(item => item.name.toLowerCase().includes(q) || item.description.toLowerCase().includes(q));
+  }
+
+  return { metas: list };
 });
+
+// שידור ישיר עבור סדרות מקומיות שאינן בטורנטים (כמו קופה ראשית)
+async function getDirectStream(show, season, episode) {
+  try {
+    const query = `${show.hebrewQuery} עונה ${season} פרק ${episode}`;
+    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4500);
+
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+    });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const html = await res.text();
+      const regex = /"videoRenderer":\{"videoId":"([a-zA-Z0-9_-]{11})","thumbnail".*?"title":\{"runs":\[\{"text":"(.*?)"\}\]/g;
+      let m;
+      let bestMatch = null;
+      while ((m = regex.exec(html)) !== null) {
+        const videoId = m[1];
+        const title = m[2];
+
+        if (title.includes(show.hebrewQuery)) {
+          if (title.includes(`פרק ${episode}`) || title.includes(`פרק ${parseInt(episode)}`)) {
+            bestMatch = { videoId, title };
+            break;
+          }
+          if (!bestMatch) {
+            bestMatch = { videoId, title };
+          }
+        }
+      }
+
+      if (bestMatch) {
+        return {
+          ytId: bestMatch.videoId,
+          name: "🇮🇱 [1080p] צפייה ישירה",
+          title: `🇮🇱 ${show.name} - עונה ${season} פרק ${episode}\n⚡ מתחיל מיידית (איכות Full HD)`
+        };
+      }
+    }
+  } catch (err) {
+    console.warn(`[CleanStreams] Direct stream search failed:`, err.message);
+  }
+  return null;
+}
 
 function parseStream(stream) {
   const fullText = `${stream.name || ""} ${stream.title || ""} ${stream.behaviorHints?.filename || ""}`;
@@ -217,7 +383,7 @@ function filterAndCurate(streams) {
     selected.push({
       ...item.raw,
       name: `🇮🇱 [${item.resolution}] Clean Stream`,
-      title: `🇮🇱 כולל עברית (מדובב / תרגום מובנה)\n👤 ${item.seeders} seeds • 💾 ${item.size || "גודל רגיל"}`
+      title: `🇮🇱 עברית (מדובב / מקור / תרגום)\n👤 ${item.seeders} seeds • 💾 ${item.size || "גודל רגיל"}`
     });
   }
 
@@ -226,7 +392,7 @@ function filterAndCurate(streams) {
     selected.push({
       ...item.raw,
       name: `⭐ [1080p] Clean Stream`,
-      title: `⭐ מומלץ ביותר (איכות FHD חדה)\n👤 ${item.seeders} seeds • 💾 ${item.size || "גודל רגיל"} • אנגלית מקורית`
+      title: `⭐ מומלץ ביותר (איכות FHD חדה)\n👤 ${item.seeders} seeds • 💾 ${item.size || "גודל רגיל"}`
     });
   }
 
@@ -235,7 +401,7 @@ function filterAndCurate(streams) {
     selected.push({
       ...item.raw,
       name: `💎 [4K UHD] Clean Stream`,
-      title: `💎 איכות 4K מקסימלית (UHD/HDR)\n👤 ${item.seeders} seeds • 💾 ${item.size || "גודל רגיל"} • אנגלית מקורית`
+      title: `💎 איכות 4K מקסימלית (UHD/HDR)\n👤 ${item.seeders} seeds • 💾 ${item.size || "גודל רגיל"}`
     });
   }
 
@@ -263,6 +429,23 @@ builder.defineStreamHandler(async ({ type, id }) => {
 
   const streams = [];
 
+  // עבור סדרות ללא מקור טורנטים (כמו קופה ראשית) - נביא מקור ישיר
+  if (type === "series") {
+    const parts = id.split(":");
+    const imdbId = parts[0];
+    const season = parts[1] || "1";
+    const episode = parts[2] || "1";
+
+    const show = ISRAELI_SERIES.find(s => s.id === imdbId && s.isKan11);
+    if (show) {
+      console.log(`[CleanStreams] Fetching direct stream for ${show.name} S${season}E${episode}`);
+      const direct = await getDirectStream(show, season, episode);
+      if (direct) {
+        streams.push(direct);
+      }
+    }
+  }
+
   try {
     const url = `${CONFIG.UPSTREAM_URL}/stream/${type}/${id}.json`;
     const controller = new AbortController();
@@ -289,7 +472,7 @@ serveHTTP(builder.getInterface(), { port: CONFIG.PORT }).then(({ url }) => {
   const stremioProtocol = `stremio://${manifestUrl.replace(/^https?:\/\//, "")}`;
 
   console.log(`=================================================`);
-  console.log(`🚀 Clean Streams Addon v1.1.0 פועל בהצלחה!`);
+  console.log(`🚀 Clean Streams Addon v1.2.0 פועל בהצלחה!`);
   console.log(`🌐 כתובת דף התוסף: ${manifestUrl.replace(/\/manifest\.json$/, "")}`);
   console.log(`🔗 כתובת ה-Manifest להתקנה בסטרימיו:`);
   console.log(`   ${manifestUrl}`);
