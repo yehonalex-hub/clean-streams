@@ -246,9 +246,9 @@ const ISRAELI_MOVIES = [
 
 const manifest = {
   id: "community.cleanstreams.il",
-  version: "1.6.0",
+  version: "1.7.0",
   name: "Clean Streams (EN / עברית)",
-  description: "סרטים וסדרות באיכות מעולה (1080p / 4K / עברית) ללא עומס וללא דיבובים זרים. כולל סדרות וסרטים ישראליים + כתוביות מובנות בעברית ובאנגלית!",
+  description: "סרטים וסדרות באיכות מעולה (1080p / 4K / עברית) ללא עומס וללא דיבובים זרים. כולל סדרות וסרטים ישראליים + כתוביות אנושיות מקצועיות בלבד (ללא תרגום מכונה) בעברית ובאנגלית!",
   resources: ["catalog", "stream", "subtitles"],
   types: ["movie", "series"],
   idPrefixes: ["tt"],
@@ -598,22 +598,11 @@ builder.defineSubtitlesHandler(async ({ type, id }) => {
   try {
     const [wizdomSubs, openSubs] = await Promise.all([wizdomPromise, openSubsPromise]);
 
-    // כתוביות בעברית: ראשית מ-Wizdom, ואם לא נמצא אז מ-OpenSubtitles
+    // כתוביות בעברית: רק תרגומים אנושיים מקצועיים (Wizdom ו-OpenSubtitles)
     if (wizdomSubs.length > 0) {
       subtitles.push(...wizdomSubs);
     } else if (openSubs.heb.length > 0) {
       subtitles.push(...openSubs.heb);
-    } else if (openSubs.eng.length > 0) {
-      // אם אין כתוביות בעברית (למשל פרק חדש שיצא בחו"ל!),
-      // נייצר כתוביות בעברית בתרגום ענן נקי ללא תיאורי סצינות מתוך האנגלית!
-      const bestEng = openSubs.eng[0];
-      const sourceUrl = bestEng.rawUrl || bestEng.url;
-      subtitles.push({
-        id: "clean_heb_1",
-        url: `${CONFIG.BASE_URL}/sub/auto-translate?url=${encodeURIComponent(sourceUrl)}`,
-        lang: "heb",
-        format: "srt"
-      });
     }
 
     // כתוביות באנגלית מ-OpenSubtitles (נקיות מתיאורי צלילים)
@@ -680,104 +669,15 @@ app.get("/sub/download", async (req, res) => {
   }
 });
 
-// נקודת קצה לתרגום אוטומטי של כתוביות מאנגלית לעברית (נקי מתיאורי צלילים)
-const autoTranslateCache = new Map();
-
-async function translateChunk(dialogLines) {
-  try {
-    const transUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=iw&dt=t&q=${encodeURIComponent(dialogLines.join("\n"))}`;
-    const res = await fetch(transUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    if (!res.ok) return dialogLines;
-    const json = await res.json();
-    const transText = json[0].map(item => item[0]).join("");
-    return transText.split("\n");
-  } catch (e) {
-    return dialogLines;
-  }
-}
-
-app.get("/sub/auto-translate", async (req, res) => {
-  const engUrl = req.query.url;
-  if (!engUrl) return res.status(400).send("Missing url parameter");
-
-  if (autoTranslateCache.has(engUrl)) {
-    res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    return res.send(autoTranslateCache.get(engUrl));
-  }
-
-  try {
-    const rawRes = await fetch(engUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    if (!rawRes.ok) return res.status(502).send("Failed to fetch source subtitles");
-
-    let srtText;
-    const buf = Buffer.from(await rawRes.arrayBuffer());
-    try {
-      srtText = zlib.gunzipSync(buf).toString("utf-8");
-    } catch (e) {
-      srtText = buf.toString("utf-8");
-    }
-
-    // ננקה תחילה את קובץ האנגלית מכל תיאורי צלילים, מוזיקה ואפקטים
-    const cleanedEngSrt = cleanSrt(srtText);
-    const blocks = cleanedEngSrt.split(/\r?\n\r?\n/).filter(b => b.trim());
-    const translatedBlocks = [];
-    const CHUNK_SIZE = 50;
-
-    for (let i = 0; i < blocks.length; i += CHUNK_SIZE) {
-      const chunk = blocks.slice(i, i + CHUNK_SIZE);
-      const dialogLines = [];
-      const parsedBlocks = [];
-
-      chunk.forEach(block => {
-        const lines = block.trim().split(/\r?\n/);
-        if (lines.length >= 3) {
-          const dialog = lines.slice(2).join(" ");
-          dialogLines.push(dialog);
-          parsedBlocks.push({ header: lines.slice(0, 2), hasDialog: true });
-        } else {
-          parsedBlocks.push({ raw: block, hasDialog: false });
-        }
-      });
-
-      if (dialogLines.length > 0) {
-        const translatedLines = await translateChunk(dialogLines);
-        let lineIdx = 0;
-        parsedBlocks.forEach(item => {
-          if (item.hasDialog) {
-            const trans = translatedLines[lineIdx] || dialogLines[lineIdx] || "";
-            translatedBlocks.push(`${item.header.join("\n")}\n${trans}`);
-            lineIdx++;
-          } else {
-            translatedBlocks.push(item.raw);
-          }
-        });
-      } else {
-        translatedBlocks.push(...chunk);
-      }
-    }
-
-    const finalSrt = translatedBlocks.join("\n\n");
-    autoTranslateCache.set(engUrl, finalSrt);
-
-    res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.send(finalSrt);
-  } catch (err) {
-    console.error("[CleanStreams] Auto-translate error:", err.message);
-    res.status(500).send("Error generating translation");
-  }
-});
-
 // שילוב ממשק התוסף של Stremio
 const addonRouter = getRouter(builder.getInterface());
 app.use(addonRouter);
 
 app.listen(CONFIG.PORT, () => {
   console.log(`=================================================`);
-  console.log(`🚀 Clean Streams Addon v1.6.0 פועל בהצלחה!`);
+  console.log(`🚀 Clean Streams Addon v1.7.0 פועל בהצלחה!`);
   console.log(`🌐 כתובת דף התוסף: ${CONFIG.BASE_URL}`);
   console.log(`🔗 כתובת ה-Manifest: ${CONFIG.BASE_URL}/manifest.json`);
-  console.log(`💬 מנוע כתוביות נקי מתיאורי צלילים (Pure Dialogue) פעיל!`);
+  console.log(`💬 מנוע כתוביות אנושיות מקצועיות בלבד (ללא תרגום מכונה) פעיל!`);
   console.log(`=================================================`);
 });
